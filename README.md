@@ -21,4 +21,4 @@ Extra resources to add a Go app to this stack:
 
 Similar:
 
-- https://github.com/CloudXiaobai/loki-cluster-deploy/tree/master/demo/docker-compose
+- https://github.com/CloudXiaobai/loki-cluster-deploy/tree/master/demo/docker-compose and [blog](https://www.mdeditor.tw/pl/pFBb/zh-hk)
