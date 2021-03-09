@@ -10,7 +10,7 @@ There's options for using different ring backend storage:
 
 ## Pre-Requisites
 
-For your containers to use to loki loggin driver, you need to install it using:
+For your containers to use to loki logging driver, you need to install it using:
 
 ```
 $ docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
