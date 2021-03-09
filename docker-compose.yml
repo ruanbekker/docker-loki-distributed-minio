@@ -178,8 +178,6 @@ services:
   nginx-app:
     image: nginx
     container_name: nginx-app
-    volumes:
-      - logsvol:/var/log
     ports:
       - 8084:80
     networks:
