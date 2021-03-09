@@ -7,6 +7,7 @@ There's options for using different ring backend storage:
 
 - The `docker-compose.yml` provides a distributed loki stack with **etcd** as the backend kvstore
 - The `docker-compose-consul.yml` provides a distrubuted loki stack with **consul** as the backend kvstore
+- The `docker-compose-traefik.yml` provides a distrubuted loki stack with **etcd** as the backend kvstore
 
 ## Pre-Requisites
 
