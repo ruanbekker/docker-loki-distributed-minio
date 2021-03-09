@@ -16,5 +16,6 @@ scrape_configs:
         - localhost
       labels:
         job: dockerlogs
-        service: cat-facts-app
+        environment: development
+        compose_service: cat-facts-app
         __path__: /var/log/catfacts/*.json
