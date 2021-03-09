@@ -103,7 +103,7 @@ services:
         loki-external-labels: job=dockerlogs,environment=development
 
   loki-distributor:
-    image: grafana/loki:1.5.0
+    image: grafana/loki:2.1.0
     container_name: loki-distributor
     ports:
       - 3101:3100
@@ -120,7 +120,7 @@ services:
       - lokidemo
 
   loki-querier:
-    image: grafana/loki:1.5.0
+    image: grafana/loki:2.1.0
     container_name: loki-querier
     ports:
       - 3100
@@ -142,7 +142,7 @@ services:
         loki-external-labels: job=dockerlogs,owner=ruan,environment=development
 
   loki-ingester:
-    image: grafana/loki:1.5.0
+    image: grafana/loki:2.1.0
     container_name: loki-ingester
     ports:
       - 3100
@@ -159,7 +159,7 @@ services:
       - lokidemo
 
   loki-table-manager:
-    image: grafana/loki:1.5.0
+    image: grafana/loki:2.1.0
     container_name: loki-table-manager
     ports:
       - 3100
