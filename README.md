@@ -1,6 +1,14 @@
 # docker-loki-distributed-minio
 Distributed Loki setup with BoltDB and Minio using Docker
 
+## Pre-Requisites
+
+For your containers to use to loki loggin driver, you need to install it using:
+
+```
+$ docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+```
+
 ## Resources
 
 Extra credit goes to the ones in the below issues, as I retrieved most of the loki config from there:
