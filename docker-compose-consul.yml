@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   redis:
-    image: bitnami/redis:latest
+    image: bitnami/redis:6.0
     container_name: redis
     environment:
       ALLOW_EMPTY_PASSWORD: "yes"
@@ -10,6 +10,11 @@ services:
       - 6379
     networks:
       - lokidemo
+    logging:
+      driver: loki
+      options:
+        loki-url: http://localhost:3101/loki/api/v1/push
+        loki-external-labels: job=dockerlogs,environment=development
 
   consul:
     container_name: consul
@@ -18,17 +23,24 @@ services:
     volumes:
       - ./consul/config:/consul/config
       - ./consul/data:/consul/data
+    ports:
+      - 8500:8500
     networks:
       - lokidemo
+    logging:
+      driver: loki
+      options:
+        loki-url: http://localhost:3101/loki/api/v1/push
+        loki-external-labels: job=dockerlogs,environment=development
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2022-03-11T23-57-45Z
     container_name: minio
     entrypoint: sh
-    command: -c 'mkdir -p /export/loki && /usr/bin/minio server /export'
+    command: -c 'mkdir -p /export/loki && minio server /export'
     environment:
-      - MINIO_ACCESS_KEY=697d0993dd097f38d5b8
-      - MINIO_SECRET_KEY=9f88738761b57c63f6a81bdfd471
+      - MINIO_ROOT_USER=697d0993dd097f38d5b8
+      - MINIO_ROOT_PASSWORD=9f88738761b57c63f6a81bdfd471
     ports:
       - 9000:9000
     networks:
@@ -47,7 +59,7 @@ services:
         loki-external-labels: job=dockerlogs,environment=development
 
   loki-distributor:
-    image: grafana/loki:2.1.0
+    image: grafana/loki:2.4.2
     container_name: loki-distributor
     ports:
       - 3101:3100
@@ -60,9 +72,14 @@ services:
     command: -config.file=/etc/loki/config.yaml -target=distributor
     networks:
       - lokidemo
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
   loki-querier:
-    image: grafana/loki:2.1.0
+    image: grafana/loki:2.4.2
     container_name: loki-querier
     ports:
       - 3100
@@ -76,13 +93,13 @@ services:
     networks:
       - lokidemo
     logging:
-      driver: loki
+      driver: "json-file"
       options:
-        loki-url: http://localhost:3101/loki/api/v1/push
-        loki-external-labels: job=dockerlogs,owner=ruan,environment=development
+        max-size: "1m"
+        max-file: "1"
 
   loki-ingester:
-    image: grafana/loki:2.1.0
+    image: grafana/loki:2.4.2
     container_name: loki-ingester
     ports:
       - 3100
@@ -95,9 +112,14 @@ services:
     command: -config.file=/etc/loki/config.yaml -target=ingester
     networks:
       - lokidemo
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
   loki-table-manager:
-    image: grafana/loki:2.1.0
+    image: grafana/loki:2.4.2
     container_name: loki-table-manager
     ports:
       - 3100
@@ -110,6 +132,11 @@ services:
     command: -config.file=/etc/loki/config.yaml -target=table-manager
     networks:
       - lokidemo
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
   nginx-app:
     image: nginx
@@ -133,13 +160,14 @@ services:
     environment:
       - SLEEP_INTERVAL=30
       - ANIMAL=cat
+      - FACTS_FILE=/var/log/catfacts/facts.json
       - PROJECT_SOURCE=https://github.com/alexwohlbruck/cat-facts
     volumes:
-      - logsvol:/var/log/catfacts
+      - /tmp/logsvol:/var/log/catfacts
     entrypoint: |
       sh -c 'sh -s << EOF
       apk add --no-cache curl
-      rm -rf /var/log/catfacts
+      if [ -f "$$FACTS_FILE" ] ; then rm -f $$FACTS_FILE; fi
       mkdir -p /var/log/catfacts
       while true
         do
@@ -147,12 +175,17 @@ services:
           curl -s -w "\n" "https://cat-fact.herokuapp.com/facts/random?animal_type=$$ANIMAL&amount=1" >> /var/log/catfacts/facts.json
         done
       EOF'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
   promtail:
-    image:  grafana/promtail:latest
+    image:  grafana/promtail:2.4.2
     container_name: promtail
     volumes:
-      - logsvol:/var/log/catfacts
+      - /tmp/logsvol:/var/log/catfacts
       - ./configs/promtail/promtail-config.yaml:/etc/promtail/docker-config.yaml
     command: -config.file=/etc/promtail/docker-config.yaml
     depends_on:
@@ -160,9 +193,14 @@ services:
       - loki-ingester
     networks:
       - lokidemo
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:8.4.4
     container_name: grafana
     ports:
       - "3000:3000"
@@ -174,11 +212,15 @@ services:
     volumes:
       - ./configs/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
       - grafana:/var/lib/grafana
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
 volumes:
   minio: {}
   grafana: {}
-  logsvol: {}
 
 networks:
   lokidemo: {}

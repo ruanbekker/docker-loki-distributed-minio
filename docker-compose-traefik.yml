@@ -94,13 +94,13 @@ services:
       - lokidemo
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2022-03-11T23-57-45Z
     container_name: minio
     entrypoint: sh
-    command: -c 'mkdir -p /export/loki && /usr/bin/minio server /export'
+    command: -c 'mkdir -p /export/loki && minio server /export'
     environment:
-      - MINIO_ACCESS_KEY=697d0993dd097f38d5b8
-      - MINIO_SECRET_KEY=9f88738761b57c63f6a81bdfd471
+      - MINIO_ROOT_USER=697d0993dd097f38d5b8
+      - MINIO_ROOT_PASSWORD=9f88738761b57c63f6a81bdfd471
     networks:
       - lokidemo
     volumes:
@@ -121,7 +121,7 @@ services:
       - "traefik.http.routers.minio.entrypoints=web"
 
   loki-distributor:
-    image: grafana/loki:2.1.0
+    image: grafana/loki:2.4.2
     container_name: loki-distributor
     ports:
       - 3101:3100
@@ -144,7 +144,7 @@ services:
       - "traefik.http.routers.distributors.entrypoints=web"
 
   loki-querier:
-    image: grafana/loki:2.1.0
+    image: grafana/loki:2.4.2
     container_name: loki-querier
     ports:
       - 3100
@@ -172,7 +172,7 @@ services:
       - "traefik.http.routers.queriers.entrypoints=web"
 
   loki-ingester:
-    image: grafana/loki:2.1.0
+    image: grafana/loki:2.4.2
     container_name: loki-ingester
     ports:
       - 3100
@@ -189,7 +189,7 @@ services:
       - lokidemo
 
   loki-table-manager:
-    image: grafana/loki:2.1.0
+    image: grafana/loki:2.4.2
     container_name: loki-table-manager
     ports:
       - 3100
@@ -228,13 +228,14 @@ services:
     environment:
       - SLEEP_INTERVAL=30
       - ANIMAL=cat
+      - FACTS_FILE=/var/log/catfacts/facts.json
       - PROJECT_SOURCE=https://github.com/alexwohlbruck/cat-facts
     volumes:
       - logsvol:/var/log/catfacts
     entrypoint: |
       sh -c 'sh -s << EOF
       apk add --no-cache curl
-      rm -rf /var/log/catfacts
+      if [ -f "$$FACTS_FILE" ] ; then rm -f $$FACTS_FILE; fi
       mkdir -p /var/log/catfacts
       while true
         do
@@ -244,7 +245,7 @@ services:
       EOF'
 
   promtail:
-    image:  grafana/promtail:latest
+    image:  grafana/promtail:2.4.2
     container_name: promtail
     volumes:
       - logsvol:/var/log/catfacts
@@ -257,7 +258,7 @@ services:
       - lokidemo
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:8.4.4
     container_name: grafana
     networks:
       - lokidemo
