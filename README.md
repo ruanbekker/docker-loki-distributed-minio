@@ -9,6 +9,19 @@ There's options for using different ring backend storage:
 - The `docker-compose-consul.yml` provides a distrubuted loki stack with **consul** as the backend kvstore
 - The `docker-compose-traefik.yml` provides a distrubuted loki stack with **etcd** as the backend kvstore
 
+## Components
+
+This stack consists of:
+
+- loki-distributor (promtail or docker logging driver points to this component)
+- loki-querier (grafana or logcli points to this component)
+- loki-ingester
+- loki-table-manager
+- redis
+- etcd or consul
+
+The architecture document can be viewed [here](https://grafana.com/docs/loki/latest/fundamentals/architecture/)
+
 ## Pre-Requisites
 
 For your containers to use to loki logging driver, you need to install it using:
