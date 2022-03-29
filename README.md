@@ -32,7 +32,7 @@ $ docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-a
 
 ## Logging Options
 
-To use loki logging driveri (push logs directly to loki):
+To use loki logging driver (push logs directly to loki):
 
 ```yaml
     logging:
@@ -54,6 +54,8 @@ To use json file logging driver (and let promtail scrape the logs):
 ```
 
 ## Boot the Stack:
+
+I will boot the stack that includes consul as a backend:
 
 ```bash
 docker-compose -f docker-compose-consul.yml up -d --build
