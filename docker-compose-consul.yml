@@ -1,5 +1,13 @@
 version: '3.8'
 
+x-logging:
+  &default-logging
+  driver: "json-file"
+  options:
+    max-size: "1m"
+    max-file: "1"
+    tag: "{{.Name}}"
+
 services:
   redis:
     image: bitnami/redis:6.0
@@ -10,28 +18,20 @@ services:
       - 6379
     networks:
       - lokidemo
-    logging:
-      driver: loki
-      options:
-        loki-url: http://localhost:3101/loki/api/v1/push
-        loki-external-labels: job=dockerlogs,environment=development
+    logging: *default-logging
 
   consul:
     container_name: consul
     image: consul:1.9
     command: agent -log-level=info -dev -client 0.0.0.0
     volumes:
-      - ./consul/config:/consul/config
-      - ./consul/data:/consul/data
+      - consul-config:/consul/config
+      - consul-data:/consul/data
     ports:
       - 8500:8500
     networks:
       - lokidemo
-    logging:
-      driver: loki
-      options:
-        loki-url: http://localhost:3101/loki/api/v1/push
-        loki-external-labels: job=dockerlogs,environment=development
+    logging: *default-logging
 
   minio:
     image: minio/minio:RELEASE.2022-03-11T23-57-45Z
@@ -52,11 +52,7 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
-    logging:
-      driver: loki
-      options:
-        loki-url: http://localhost:3101/loki/api/v1/push
-        loki-external-labels: job=dockerlogs,environment=development
+    logging: *default-logging
 
   loki-distributor:
     image: grafana/loki:2.4.2
@@ -72,11 +68,7 @@ services:
     command: -config.file=/etc/loki/config.yaml -target=distributor
     networks:
       - lokidemo
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
+    logging: *default-logging
 
   loki-querier:
     image: grafana/loki:2.4.2
@@ -92,11 +84,7 @@ services:
     command: -config.file=/etc/loki/config.yaml -target=querier
     networks:
       - lokidemo
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
+    logging: *default-logging
 
   loki-ingester:
     image: grafana/loki:2.4.2
@@ -112,11 +100,7 @@ services:
     command: -config.file=/etc/loki/config.yaml -target=ingester
     networks:
       - lokidemo
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
+    logging: *default-logging
 
   loki-table-manager:
     image: grafana/loki:2.4.2
@@ -132,11 +116,7 @@ services:
     command: -config.file=/etc/loki/config.yaml -target=table-manager
     networks:
       - lokidemo
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
+    logging: *default-logging
 
   nginx-app:
     image: nginx
@@ -148,56 +128,30 @@ services:
       - lokidemo
     depends_on:
       - loki-distributor
-    logging:
-      driver: loki
-      options:
-        loki-url: http://localhost:3101/loki/api/v1/push
-        loki-external-labels: job=dockerlogs,environment=development
+    logging: *default-logging
 
-  cat-facts-app:
-    image: alpine
-    container_name: cat-facts-app
-    environment:
-      - SLEEP_INTERVAL=30
-      - ANIMAL=cat
-      - FACTS_FILE=/var/log/catfacts/facts.json
-      - PROJECT_SOURCE=https://github.com/alexwohlbruck/cat-facts
-    volumes:
-      - /tmp/logsvol:/var/log/catfacts
-    entrypoint: |
-      sh -c 'sh -s << EOF
-      apk add --no-cache curl
-      if [ -f "$$FACTS_FILE" ] ; then rm -f $$FACTS_FILE; fi
-      mkdir -p /var/log/catfacts
-      while true
-        do
-          sleep $$SLEEP_INTERVAL
-          curl -s -w "\n" "https://cat-fact.herokuapp.com/facts/random?animal_type=$$ANIMAL&amount=1" >> /var/log/catfacts/facts.json
-        done
-      EOF'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
+  flask-app:
+    image: flask-app
+    container_name: flask-app
+    build: ./flask-app
+    restart: unless-stopped
+    ports:
+      - 5000:5000
+    logging: *default-logging
 
   promtail:
     image:  grafana/promtail:2.4.2
     container_name: promtail
     volumes:
-      - /tmp/logsvol:/var/log/catfacts
-      - ./configs/promtail/promtail-config.yaml:/etc/promtail/docker-config.yaml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./configs/promtail/docker-config.yaml:/etc/promtail/docker-config.yaml
     command: -config.file=/etc/promtail/docker-config.yaml
     depends_on:
-      - cat-facts-app
+      - flask-app
       - loki-ingester
     networks:
       - lokidemo
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
+    logging: *default-logging
 
   grafana:
     image: grafana/grafana:8.4.4
@@ -212,15 +166,14 @@ services:
     volumes:
       - ./configs/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
       - grafana:/var/lib/grafana
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
+    logging: *default-logging
 
 volumes:
   minio: {}
   grafana: {}
+  consul-config: {}
+  consul-data: {}
 
 networks:
-  lokidemo: {}
+  lokidemo: 
+    name: lokidemo
