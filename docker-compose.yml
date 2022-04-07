@@ -154,7 +154,7 @@ services:
     logging: *default-logging
 
   grafana:
-    image: grafana/grafana:8.4.4
+    image: grafana/grafana:8.4.5
     container_name: grafana
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
