@@ -72,7 +72,7 @@ curl 'http://localhost:5000/?msg=hi'
 Test the nginx-app:
 
 ```bash
-curl 'http://localhost:8084/?msg=bye
+curl 'http://localhost:8084/?msg=bye'
 ```
 
 ## Example Queries
